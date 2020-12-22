@@ -18,6 +18,9 @@ would translate to the following queries:
 (1 ^ 2 ^ 3) v (4 ^ 5 ^ 6)
 (10 ^ NOT 11) v (12 ^ 13) v (14 ^ 15)
 
+If using this file on the command line (without interactive python) then you can provide the path to the data file as the first command line argument and 
+the path to the query file as the second command line argument. The total time it took to perform all queries in the query file will be output.
+
 """
 
 import sys, time
@@ -171,3 +174,14 @@ def getGene(numCells, matrix, gene):
 				notGene.append(i)
 		return notGene
 
+
+if __name__ == "__main__":
+
+	dataFile = sys.argv[1]
+	queryFile = sys.argv[2]
+
+	numGenes, numCells, matrix = formatData(dataFile)
+	
+	totalTime = lookUpQueriesFromFile(numGenes, numCells, matrix, queryFile)
+
+	print("Total time was: ",totalTime)
