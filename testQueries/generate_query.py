@@ -9,4 +9,5 @@ def randomQuery(numGenes, numClauses, minClauseSize, maxClauseSize):
                 gene = random.randint(-numGenes, numGenes)
             query += str(gene) + ","
         query = query[:-1] + ";"
+    query = query[:-1]
     return query
