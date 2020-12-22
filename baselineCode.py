@@ -22,9 +22,6 @@ would translate to the following queries:
 
 import sys, time
 
-# this is a set of all the cells. If the first gene in a clause is NOT, need to get the difference between all cells and that gene's cells
-allCells = set()
-
 # this function takes the name of at matrix file (.mtx) and returns the number of genes, number of cells, and the matrix as a list of sets (1 set of cells per gene) 
 def formatData(filename):
 
@@ -44,7 +41,7 @@ def formatData(filename):
 			vals = line.split(" ")
 			matrix[int(vals[0])].add(int(vals[1]))
 
-	allCells.update(set(range(1,numCells + 1)))
+	f.close()
 
 	return numGenes, numCells, matrix
 
@@ -80,15 +77,15 @@ def lookUpQueryTimed(numGenes, numCells, matrix, query):
 
 
 # this function is for looking up queries that are coming from a file and timing them (the file should just have one query per line)
-def lookUpQueriesFromFile(numGenes, numCells, matrix, filename):
+def lookUpQueriesFromFile(numGenes, numCells, matrix, queryFile):
 
 	totalTime = 0.0
 
-	queries = getQueriesFromFile(filename)
+	queries = getQueriesFromFile(queryFile)
 	for query in queries:
 		results, queryTime = lookUpQueryTimed(numGenes, numCells, matrix, query)
 
-		totaTime += queryTime
+		totalTime += queryTime
 
 	return totalTime
 
@@ -116,6 +113,8 @@ def getQueriesFromFile(filename):
 
 		queries.append(query)
 
+	f.close()
+
 	return queries
 
 
@@ -129,7 +128,7 @@ def runTests(queriesFile, dataFile):
 	count = 0
 	for query in queries:
 		print("Current query:",query)
-		expectedResults = getExpectedResults(matrix, query)
+		expectedResults = getExpectedResults(numCells, matrix, query)
 		baselineResults = lookUpQuery(numGenes, numCells, matrix, query)
 
 		if expectedResults != baselineResults:
@@ -142,7 +141,7 @@ def runTests(queriesFile, dataFile):
 
 # this function is for testing the code. It basically just gets the results by directly looking at the matrix. 
 # The returned value can then be compared to the results from the lookUpQuery() function
-def getExpectedResults(matrix, query):
+def getExpectedResults(numCells, matrix, query):
 
 	results = set()
 
@@ -150,28 +149,25 @@ def getExpectedResults(matrix, query):
 		clauseResults = set()
 		first = True
 		for gene in clause:
-			if first:
-				if gene < 0:
-					clauseResults = allCells.difference(matrix[-gene])
-				else:
-					clauseResults = matrix[gene]
+			if first:	
+				clauseResults.update(getGene(numCells, matrix, gene))
 				first = False
 			else:
-				if gene < 0:
-					clauseResults = clauseResults.difference(matrix[-gene])
-				else:
-					clauseResults = clauseResults.intersection(matrix[gene])
+				clauseResults = clauseResults.intersection(getGene(numCells, matrix, gene))
 
 		results.update(clauseResults)
 
 	return results
 
+# this function returns either the cells that are in the set or the cells NOT in the set depending on the parity of the gene
+def getGene(numCells, matrix, gene):
 
-if __name__ == "__main__":
+	if gene > 0:
+		return matrix[gene]
+	else:
+		notGene = []
+		for i in range(1, numCells + 1):
+			if i not in matrix[-gene]:
+				notGene.append(i)
+		return notGene
 
-	filename = sys.argv[1]
-
-	numGenes, numCells, matrix = formatData(filename)
-	print("numGenes",numGenes)
-	print("numCells",numCells)
-	print("matrix[",len(matrix) - 5,"]:",matrix[len(matrix) - 5])
