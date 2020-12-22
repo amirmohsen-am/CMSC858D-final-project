@@ -1,8 +1,10 @@
-from GeneCell import GeneCell
+from SingleCellSearch import SingleCellSearch
 
-fname = "/Users/mos/Desktop/bio-project/ebi.ac.uk/E-MTAB-7051-quantification-raw-files/E-MTAB-7051.aggregated_filtered_counts.mtx"
+#fname = "/Users/mos/Desktop/bio-project/ebi.ac.uk/E-MTAB-7051-quantification-raw-files/E-MTAB-7051.aggregated_filtered_counts.mtx"
+fname = "../human_dataset/E-MTAB-9221.aggregated_filtered_counts.mtx"
 
-data = GeneCell(fname)
+
+data = SingleCellSearch(fname)
 
 n_query = int(input("Number of queries:"))
 # genome input is given 1 based from ebi.ac.uk
