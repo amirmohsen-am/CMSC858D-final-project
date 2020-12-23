@@ -1,5 +1,6 @@
 from baselineCode import *
-import sys
+import sys, random
+import json
 
 # if len(sys.argv) < 2:
 # 	print("Provide single-cell file")
@@ -9,11 +10,13 @@ import sys
 class SingleCellSearch:
 	# how many optimization we are using
 	optimization_level = 3
-	def __init__(self, fname, optimization_level=3):
+	def __init__(self, fname, optimization_level=3, distance_file=None):
 		self.optimization_level = optimization_level
 		f = open(fname, 'r')
 		f.readline()
 		self.rows, self.cols, self.non_zero_cells = map(int, f.readline().split())
+		self.numGenes = self.rows
+		self.numCells = self.cols
 
 		# genes are 1 based
 		
@@ -50,20 +53,41 @@ class SingleCellSearch:
 		
 		# Hamming Distance optimization
 		if self.optimization_level >= 2:
-			print("Calculating hamming distance:")
-			self.distance = [[0 for j in range(self.rows+1)] for i in range(self.rows+1)]
-			for i in range(1, self.rows+1):
-				if i%100 == 0:
-					print("{:.2f}%".format(i/(self.rows+1)*100), end = " ")
+			if distance_file is not None:
+				self.load_distances(distance_file)
+			else:
+				print("Calculating hamming distance:")
+				self.distance = [[0 for j in range(self.rows+1)] for i in range(self.rows+1)]
+				for i in range(1, self.rows+1):
+					if i%100 == 0:
+						print("{:.2f}%".format(i/(self.rows+1)*100), end = " ")
 
-				for j in range(i+1, self.rows+1):
-					intersection = self.gene_cell[i].intersection(self.gene_cell[j])
-					self.distance[i][j] = self.distance[j][i] = len(self.gene_cell[i]) + len(self.gene_cell[j]) - len(intersection)
-			print("hamming distance calculation done")
+					for j in range(i+1, self.rows+1):
+						intersection = self.gene_cell[i].intersection(self.gene_cell[j])
+						self.distance[i][j] = self.distance[j][i] = len(self.gene_cell[i]) + len(self.gene_cell[j]) - 2*len(intersection)
+				print("hamming distance calculation done")
 
 
 
 		print("Preprocessing done")
+	
+	def save_distances(self, distance_file):
+		print("Saving distances to " + distance_file)
+		with open(distance_file, 'w') as f:
+			for i in range(self.rows+1):
+				f.write(" ".join(map(str, self.distance[i])) + "\n")
+		print("Saving done")
+	
+	def load_distances(self, distance_file):
+		print("Loading distances from " + distance_file)
+		self.distance = [[0 for j in range(self.rows+1)] for i in range(self.rows+1)]
+		with open(distance_file, 'r') as f:
+			i = 0
+			for line in f.readlines():
+				self.distance[i] = list(map(int, line.split(" ")))
+				i += 1
+		print("Loading done")
+
 
 	# v < 0: not of v
 	def get_gene(self, v):
@@ -154,3 +178,46 @@ def test_code(scc_data, baseline_data, queries):
 			print("Query Number:",count," passed")
 
 		count += 1
+
+def rand_neg(): 
+	return random.randint(0, 1)*2-1
+
+def create_meaninfulquery(scc_data, numClauses, numTerms):
+	query = []
+	numGenes = scc_data.numGenes
+	for i in range(numClauses):
+		clause = [random.randint(1, numGenes)]
+		clause[0] *= rand_neg()
+
+		closest = []
+		for k in range(-numGenes, numGenes):
+			if k != 0 and k != clause[0]:
+				closest.append((scc_data.hamming_distance(clause[0], k), k))
+		# print(len(closest))
+		# print(len(closest[0]))
+		closest.sort()
+		for j in range(0, numTerms-1):
+			clause.append(closest[j][1])
+		query.append(clause)
+	return query
+		
+def create_dumb_query(scc_data, numClauses, numTerms):
+	query = []
+	numGenes = scc_data.numGenes
+	for i in range(numClauses):
+		clause = [random.randint(-numGenes, numGenes)] * (numTerms-1)
+		
+		closest = []
+		for k in range(-numGenes, numGenes):
+			if k != 0 and k != clause[0]:
+				closest.append((scc_data.hamming_distance(clause[0], k), k))
+		closest.sort()
+
+		clause.append(closest[-1][1])
+		print(closest[-10:-1])
+		# clause.append(random.randint(-numGenes, numGenes))
+		
+		query.append(clause)
+	return query
+
+			
