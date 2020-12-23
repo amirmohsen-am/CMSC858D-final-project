@@ -19,7 +19,7 @@ largeTermsMax = 25
 numGenes = 9503
 
 # number of queries that will go in each file
-numQueries = 10
+numQueries = 100
 
 # E-CURD-21 is the name of the fly data files
 f = open('E-CURD-21-random-queries-small-clauses-small-genes.in', 'w')
