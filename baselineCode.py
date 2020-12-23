@@ -60,8 +60,10 @@ def lookUpQuery(numGenes, numCells, matrix, query):
 			for j in disjunction:
 				if j < 0 and i in matrix[-j]:
 					disjunctionVerdict = False
+					break
 				elif j > 0 and i not in matrix[j]:
 					disjunctionVerdict = False
+					break
 			# if all parts of disjunction were checked and none were false, add this cell to the results
 			if disjunctionVerdict:
 				results.add(i)
@@ -180,8 +182,10 @@ if __name__ == "__main__":
 	dataFile = sys.argv[1]
 	queryFile = sys.argv[2]
 
+	print("Formatting data...")
 	numGenes, numCells, matrix = formatData(dataFile)
 	
+	print("Doing the search...")
 	totalTime = lookUpQueriesFromFile(numGenes, numCells, matrix, queryFile)
 
 	print("Total time was: ",totalTime)
