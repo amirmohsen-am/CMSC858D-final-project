@@ -7,7 +7,10 @@ import sys
 
 
 class SingleCellSearch:
-	def __init__(self, fname):
+	# how many optimization we are using
+	optimization_level = 3
+	def __init__(self, fname, optimization_level=3):
+		self.optimization_level = optimization_level
 		f = open(fname, 'r')
 		f.readline()
 		self.rows, self.cols, self.non_zero_cells = map(int, f.readline().split())
@@ -44,6 +47,22 @@ class SingleCellSearch:
 
 		self.srt.sort(reverse=True)
 
+		
+		# Hamming Distance optimization
+		if self.optimization_level >= 2:
+			print("Calculating hamming distance:")
+			self.distance = [[0 for j in range(self.rows+1)] for i in range(self.rows+1)]
+			for i in range(1, self.rows+1):
+				if i%100 == 0:
+					print("{:.2f}%".format(i/(self.rows+1)*100), end = " ")
+
+				for j in range(i+1, self.rows+1):
+					intersection = self.gene_cell[i].intersection(self.gene_cell[j])
+					self.distance[i][j] = self.distance[j][i] = len(self.gene_cell[i]) + len(self.gene_cell[j]) - len(intersection)
+			print("hamming distance calculation done")
+
+
+
 		print("Preprocessing done")
 
 	# v < 0: not of v
@@ -57,8 +76,16 @@ class SingleCellSearch:
 				if i not in self.gene_cell[-v]:
 					not_g.append(i)
 			return not_g
+
+	# u and v could be negative
+	def hamming_distance(self, u, v):
+		if u*v > 0:
+			return self.distance[u][v]
+		else:
+			return self.cols - self.distance[u][v]
+			
 		
-	def search(self, query):
+	def search(self, query, optimization_level=3):
 		result_cells = set()
 		for clause in query:
 			priority = []
@@ -73,20 +100,32 @@ class SingleCellSearch:
 			priority.sort()
 			
 			smallest_gene = priority[0][1]
-			intersected_cells = self.get_gene(smallest_gene)
+			intersected_cells = set(self.get_gene(smallest_gene))
+
+			# look ahead optimization (removing results from representetive)
+			if optimization_level >= 1:
+				for x in list(intersected_cells):
+					if x in result_cells:
+						intersected_cells.remove(x)
 			
+			
+			# hamming distance optimization
+			if optimization_level >= 2:
+				for i in range(2, len(priority)):
+					if self.hamming_distance(priority[0][1], priority[1][1]) < self.hamming_distance(priority[0][1], priority[i][1]):
+						priority[1], priority[i] = priority[i], priority[1]
+				
+
 			for i in range(1, len(priority)):
 				v = priority[i][1]
 				# make a copy of answer cells
-				tmp = set(intersected_cells)
-				for x in intersected_cells:
+				for x in list(intersected_cells):
 					if v > 0:
 						if not x in self.gene_cell[v]:
-							tmp.remove(x)
+							intersected_cells.remove(x)
 					else:
 						if x in self.gene_cell[-v]:
-							tmp.remove(x)
-				intersected_cells = tmp
+							intersected_cells.remove(x)
 			# query_str = '^'.join("g_"+str(v) for v in clause)			
 			# print("clause:", query_str)
 			# print(len(intersected_cells))
